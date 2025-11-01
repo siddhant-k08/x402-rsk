@@ -1,0 +1,16 @@
+{
+  "name": "x402-rootstock-starter",
+  "version": "1.0.0",
+  "description": "Complete x402 payment starter kit for Rootstock Testnet",
+  "scripts": {
+    "install-all": "cd merchant-api && npm install && cd ../facilitator && npm install && cd ../client-demo && npm install && cd ../frontend && npm install",
+    "facilitator": "cd facilitator && npm start",
+    "merchant": "cd merchant-api && npm start",
+    "client": "cd client-demo && npm start",
+    "frontend": "cd frontend && npm run dev",
+    "dev": "echo 'Please run services in separate terminals:\n  npm run facilitator\n  npm run merchant\n  npm run frontend'"
+  },
+  "keywords": ["x402", "payment", "rootstock", "bitcoin", "cryptocurrency"],
+  "author": "",
+  "license": "MIT"
+}
