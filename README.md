@@ -2,6 +2,10 @@
 
 A production-ready implementation of HTTP 402 "Payment Required" for cryptocurrency payments on Rootstock. Gate API access behind native tRBTC payments with blockchain verification.
 
+<div align="center">
+  <img src="./frontend/public/landingpage.png" width="900" />
+</div>
+
 ## What is x402?
 
 The x402 protocol enables **pay-per-use APIs** using cryptocurrency:
