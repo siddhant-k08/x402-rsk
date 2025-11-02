@@ -1,97 +1,38 @@
-# Facilitator (Payment Verifier)
+# Facilitator
 
-Service for verifying Rootstock Testnet transactions.
+Transaction verification service for Rootstock payments.
 
-## Installation
+## Setup
 
 ```bash
 npm install
 ```
 
-## Configuration
-
-Create `.env` file:
-
+Create `.env`:
 ```env
-PORT=4001
-ROOTSTOCK_RPC=https://public-node.testnet.rsk.co
+ROOTSTOCK_RPC=https://rpc.testnet.rootstock.io/<YOUR_API_KEY>
 MIN_CONFIRMATIONS=1
 ```
 
-## Running
+Get API key from [rpc.rootstock.io](https://rpc.rootstock.io/)
+
+## Run
 
 ```bash
 npm start
 ```
 
-## API Endpoints
+Runs on `http://localhost:4001`
 
-### POST /verify
+## Endpoints
 
-Verify a payment transaction.
+- `POST /verify` - Verify transaction
+- `GET /health` - Health check
 
-**Request:**
-```bash
-curl -X POST http://localhost:4001/verify \
-  -H "Content-Type: application/json" \
-  -d '{
-    "txHash": "0x...",
-    "recipient": "0x...",
-    "amount": "0.0001"
-  }'
-```
+## Verification
 
-**Success Response:**
-```json
-{
-  "valid": true,
-  "confirmations": 2,
-  "transaction": {
-    "hash": "0x...",
-    "from": "0x...",
-    "to": "0x...",
-    "value": "0.0001",
-    "blockNumber": 5234567,
-    "timestamp": null
-  }
-}
-```
-
-**Failure Response:**
-```json
-{
-  "valid": false,
-  "reason": "Wrong recipient. Expected 0x..., got 0x..."
-}
-```
-
-### GET /health
-
-Health check with network status.
-
-```bash
-curl http://localhost:4001/health
-```
-
-Response:
-```json
-{
-  "status": "ok",
-  "service": "x402-facilitator",
-  "network": "rootstock-testnet",
-  "currentBlock": 5234567,
-  "rpc": "https://public-node.testnet.rsk.co"
-}
-```
-
-## Verification Logic
-
-The facilitator checks:
-
-1. **Transaction exists** on Rootstock Testnet
-2. **Transaction succeeded** (status = 1)
-3. **Recipient matches** expected address
-4. **Amount is sufficient** (>= expected amount)
-5. **Confirmations meet minimum** (default: 1)
-
-All checks must pass for `valid: true`.
+Checks:
+1. Transaction exists and succeeded
+2. Recipient matches
+3. Amount is sufficient
+4. Confirmations meet minimum

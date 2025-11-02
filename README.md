@@ -1,570 +1,154 @@
-# 🚀 x402 Payment Starter Kit - Rootstock Testnet
+# 🚀 x402 Payment Starter Kit
 
-A complete implementation of the **402 Payment Required** HTTP status code pattern for cryptocurrency payments on Rootstock Testnet. This starter kit demonstrates how to build a payment-gated API with native tRBTC (Test Rootstock Bitcoin) payments.
+A production-ready implementation of HTTP 402 "Payment Required" for cryptocurrency payments on Rootstock. Gate API access behind native tRBTC payments with blockchain verification.
 
-## 📋 Table of Contents
+## What is x402?
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Module Details](#module-details)
-- [Testing Flow](#testing-flow)
-- [Configuration](#configuration)
-- [Troubleshooting](#troubleshooting)
-- [Future Enhancements](#future-enhancements)
+The x402 protocol enables **pay-per-use APIs** using cryptocurrency:
 
-## 🎯 Overview
+1. Client requests resource → Server returns **402 Payment Required**
+2. Client sends tRBTC payment on Rootstock blockchain
+3. Client retries with payment proof → Server verifies and grants access
 
-The x402 protocol implements HTTP 402 "Payment Required" to gate API access behind cryptocurrency payments. When a client requests a protected resource without payment:
+**Why Rootstock?** Bitcoin security + EVM compatibility + Low fees
 
-1. **Server returns 402** with payment details (recipient address, amount, chain)
-2. **Client sends payment** on-chain (native tRBTC transfer)
-3. **Client retries request** with payment proof (transaction hash)
-4. **Facilitator verifies** the transaction on Rootstock
-5. **Server grants access** if payment is valid
-
-### Why Rootstock?
-
-- **Bitcoin-secured**: Rootstock is merge-mined with Bitcoin, inheriting its security
-- **EVM-compatible**: Use familiar Ethereum tools (Ethers.js, MetaMask, Wagmi)
-- **Low fees**: Testnet transactions are free; mainnet fees are minimal
-- **Native payments**: Simple tRBTC transfers, no token contracts needed
-
-## 🏗️ Architecture
+## Architecture
 
 ```
-┌─────────────┐
-│   Client    │ (Frontend/CLI)
-│  (Buyer)    │
-└──────┬──────┘
-       │
-       │ 1. POST /api/order-groceries
-       │    (no payment)
-       ▼
-┌─────────────┐
-│  Merchant   │
-│     API     │ ◄──── Returns 402 with payment details
-└──────┬──────┘
-       │
-       │ 2. Send tRBTC transaction
-       │    on Rootstock Testnet
-       ▼
-┌─────────────┐
-│  Rootstock  │
-│  Blockchain │
-└──────┬──────┘
-       │
-       │ 3. POST /api/order-groceries
-       │    X-PAYMENT: {"txHash": "0x..."}
-       ▼
-┌─────────────┐      ┌─────────────┐
-│  Merchant   │─────▶│ Facilitator │
-│     API     │      │  (Verifier) │
-└─────────────┘      └──────┬──────┘
-       │                    │
-       │                    │ Verify transaction:
-       │                    │ - Correct recipient?
-       │                    │ - Sufficient amount?
-       │                    │ - Confirmed on-chain?
-       │                    │
-       │◄───────────────────┘
-       │
-       ▼
-   200 OK - Order confirmed!
+Frontend (React + MetaMask)
+    ↓
+Merchant API (Express) ← → Facilitator (Transaction Verifier)
+    ↓                              ↓
+Rootstock Blockchain ← ← ← ← ← ← ←
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 x402/
-├── merchant-api/          # Express API with 402 pattern
-│   ├── index.js
-│   ├── package.json
-│   └── .env.example
-│
-├── facilitator/           # Transaction verification service
-│   ├── index.js
-│   ├── package.json
-│   └── .env.example
-│
-├── client-demo/           # CLI testing tool
-│   ├── index.js
-│   ├── package.json
-│   └── .env.example
-│
-├── frontend/              # React web app with MetaMask
-│   ├── src/
-│   │   ├── App.jsx
-│   │   ├── main.jsx
-│   │   ├── index.css
-│   │   ├── components/
-│   │   │   └── OrderGroceries.jsx
-│   │   └── lib/
-│   │       └── wagmiConfig.js
-│   ├── index.html
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── tailwind.config.js
-│   └── .env.example
-│
-├── .env.example           # Root environment template
-├── .gitignore
+├── merchant-api/      # Express API (402 pattern)
+├── facilitator/       # Transaction verifier
+├── client-demo/       # CLI tool
+├── frontend/          # React + Wagmi UI
 └── README.md
 ```
 
-## ✅ Prerequisites
-
-### Required Software
+## Prerequisites
 
 - **Node.js** v18+ and npm
-- **MetaMask** browser extension (for frontend testing)
-- **Git** (for cloning)
+- **MetaMask** browser extension
+- **Rootstock Testnet** configured in MetaMask:
+  - RPC: `https://rpc.testnet.rootstock.io/<YOUR_API_KEY>`
+  - Chain ID: `31`
+  - Get tRBTC: [faucet.rootstock.io](https://faucet.rootstock.io/)
+  - Get API Key: [rpc.rootstock.io](https://rpc.rootstock.io/)
 
-### Rootstock Testnet Setup
+## Quick Start
 
-1. **Add Rootstock Testnet to MetaMask**:
-   - Network Name: `Rootstock Testnet`
-   - RPC URL: `https://public-node.testnet.rsk.co`
-   - Chain ID: `31`
-   - Currency Symbol: `tRBTC`
-   - Block Explorer: `https://explorer.testnet.rsk.co`
-
-2. **Get Test tRBTC**:
-   - Visit [https://faucet.rootstock.io/](https://faucet.rootstock.io/)
-   - Enter your wallet address
-   - Receive 0.05 tRBTC (usually within minutes)
-
-3. **Create Test Wallets**:
-   - **Merchant wallet**: For receiving payments
-   - **Buyer wallet**: For sending payments (needs tRBTC from faucet)
-
-## 🚀 Quick Start
-
-### 1. Clone and Setup
+### 1. Install Dependencies
 
 ```bash
-# Clone the repository
-cd x402
-
-# Install dependencies for all modules
 cd merchant-api && npm install && cd ..
 cd facilitator && npm install && cd ..
 cd client-demo && npm install && cd ..
 cd frontend && npm install && cd ..
 ```
 
-### 2. Configure Environment Variables
+### 2. Configure Environment
 
-Create `.env` files in each module directory:
+Create `.env` files from examples:
 
-#### merchant-api/.env
+**merchant-api/.env:**
 ```env
-PORT=4000
 MERCHANT_ADDRESS=0xYourMerchantWalletAddress
 PAYMENT_AMOUNT=0.0001
 FACILITATOR_URL=http://localhost:4001
 ```
 
-#### facilitator/.env
+**facilitator/.env:**
 ```env
-PORT=4001
-ROOTSTOCK_RPC=https://public-node.testnet.rsk.co
+ROOTSTOCK_RPC=https://rpc.testnet.rootstock.io/<YOUR_API_KEY>
 MIN_CONFIRMATIONS=1
 ```
 
-#### client-demo/.env
-```env
-ROOTSTOCK_RPC=https://public-node.testnet.rsk.co
-WALLET_PRIVATE_KEY=0xYourBuyerPrivateKey
-MERCHANT_API_URL=http://localhost:4000
-```
-
-#### frontend/.env
+**frontend/.env:**
 ```env
 VITE_MERCHANT_API_URL=http://localhost:4000
-VITE_ROOTSTOCK_RPC=https://public-node.testnet.rsk.co
 ```
 
-### 3. Start Services
-
-Open **three separate terminals**:
-
-**Terminal 1 - Facilitator:**
-```bash
-cd facilitator
-npm start
-```
-
-**Terminal 2 - Merchant API:**
-```bash
-cd merchant-api
-npm start
-```
-
-**Terminal 3 - Frontend:**
-```bash
-cd frontend
-npm run dev
-```
-
-### 4. Test the Flow
-
-#### Option A: Web Interface (Recommended)
-
-1. Open browser to `http://localhost:3000`
-2. Click "Connect MetaMask"
-3. Ensure you're on Rootstock Testnet
-4. Click "Order Groceries"
-5. Review payment details
-6. Click "Pay" and confirm in MetaMask
-7. Wait for confirmation (~30 seconds)
-8. See order confirmation!
-
-#### Option B: CLI Testing
+### 3. Start Services (3 terminals)
 
 ```bash
-cd client-demo
-npm start
+# Terminal 1
+cd facilitator && npm start
+
+# Terminal 2  
+cd merchant-api && npm start
+
+# Terminal 3
+cd frontend && npm run dev
 ```
 
-The CLI will:
-- Request order (receive 402)
-- Send payment transaction
-- Retry with payment proof
-- Display order confirmation
+### 4. Test Payment Flow
 
-## 📦 Module Details
+1. Open `http://localhost:3000`
+2. Connect MetaMask (Rootstock Testnet)
+3. Click "Start Order"
+4. Click "Pay" and confirm in MetaMask
+5. Wait ~30 seconds for confirmation
+6. See order success!
 
-### 1. merchant-api
+## Components
 
-**Purpose**: Implements the 402 Payment Required pattern
+- **merchant-api**: Express API implementing 402 pattern
+- **facilitator**: Transaction verification service (Ethers.js)
+- **frontend**: React UI with MetaMask (Wagmi + Viem)
+- **client-demo**: CLI testing tool
 
-**Key Features**:
-- Returns 402 with payment details when no payment provided
-- Validates X-PAYMENT header with transaction hash
-- Calls facilitator to verify payments
-- Returns 200 with order details on successful payment
+## Testing
 
-**Endpoints**:
-- `GET /health` - Health check
-- `POST /api/order-groceries` - Main order endpoint
-
-**Tech Stack**: Express, Axios, dotenv
-
-### 2. facilitator
-
-**Purpose**: Verifies Rootstock transactions independently
-
-**Key Features**:
-- Connects to Rootstock Testnet RPC
-- Fetches transaction and receipt data
-- Validates recipient address
-- Checks payment amount (must be >= expected)
-- Verifies confirmations (configurable minimum)
-- Returns detailed verification results
-
-**Endpoints**:
-- `GET /health` - Health check with network status
-- `POST /verify` - Verify transaction
-
-**Tech Stack**: Express, Ethers.js v6, dotenv
-
-### 3. client-demo
-
-**Purpose**: CLI tool for programmatic testing
-
-**Key Features**:
-- Automated payment flow
-- Wallet management with private key
-- Transaction sending and monitoring
-- Colored console output for clarity
-- Error handling and validation
-
-**Usage**: `npm start` (after configuring .env)
-
-**Tech Stack**: Node.js, Axios, Ethers.js, dotenv
-
-### 4. frontend
-
-**Purpose**: User-friendly web interface for payments
-
-**Key Features**:
-- MetaMask integration via Wagmi
-- Network switching support
-- Real-time transaction status
-- Beautiful, responsive UI with Tailwind
-- Transaction explorer links
-- Error handling with retry logic
-
-**Tech Stack**: React, Vite, Wagmi, Viem, TailwindCSS, Axios
-
-## 🧪 Testing Flow
-
-### Complete Test Scenario
-
-1. **Start all services** (facilitator, merchant-api, frontend)
-
-2. **Verify services are running**:
-   ```bash
-   curl http://localhost:4001/health  # Facilitator
-   curl http://localhost:4000/health  # Merchant API
-   ```
-
-3. **Test 402 response**:
-   ```bash
-   curl -X POST http://localhost:4000/api/order-groceries
-   ```
-   
-   Expected response:
-   ```json
-   {
-     "payment_required": {
-       "chain": "rootstock-testnet",
-       "recipient": "0x...",
-       "amount_tRBTC": "0.0001",
-       "facilitator": "http://localhost:4001/verify"
-     }
-   }
-   ```
-
-4. **Send payment** (via frontend or CLI)
-
-5. **Verify payment manually** (optional):
-   ```bash
-   curl -X POST http://localhost:4001/verify \
-     -H "Content-Type: application/json" \
-     -d '{
-       "txHash": "0x...",
-       "recipient": "0x...",
-       "amount": "0.0001"
-     }'
-   ```
-
-6. **Submit order with payment**:
-   ```bash
-   curl -X POST http://localhost:4000/api/order-groceries \
-     -H "X-PAYMENT: {\"txHash\": \"0x...\"}"
-   ```
-
-## ⚙️ Configuration
-
-### Payment Amount
-
-Adjust in `merchant-api/.env`:
-```env
-PAYMENT_AMOUNT=0.0001  # Change to any amount
+**Verify services:**
+```bash
+curl http://localhost:4001/health  # Facilitator
+curl http://localhost:4000/health  # Merchant API
 ```
 
-### Confirmation Requirements
-
-Adjust in `facilitator/.env`:
-```env
-MIN_CONFIRMATIONS=1  # Increase for more security
+**Test 402 response:**
+```bash
+curl -X POST http://localhost:4000/api/order-groceries
 ```
 
-### RPC Endpoint
-
-For better reliability, consider using:
-- Rootstock's public node (default)
-- Your own Rootstock node
-- Third-party RPC providers
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-#### "Transaction not found"
-- **Cause**: Transaction hasn't been mined yet
-- **Solution**: Wait 30-60 seconds and retry
-
-#### "Insufficient confirmations"
-- **Cause**: Transaction needs more blocks
-- **Solution**: Wait for more confirmations or reduce `MIN_CONFIRMATIONS`
-
-#### "Wrong recipient"
-- **Cause**: Payment sent to wrong address
-- **Solution**: Verify `MERCHANT_ADDRESS` matches in both merchant-api and payment
-
-#### "MetaMask not connecting"
-- **Cause**: Wrong network or MetaMask not installed
-- **Solution**: 
-  - Install MetaMask extension
-  - Add Rootstock Testnet manually
-  - Refresh page
-
-#### "Facilitator unavailable"
-- **Cause**: Facilitator service not running
-- **Solution**: Start facilitator first: `cd facilitator && npm start`
-
-#### "Balance is 0"
-- **Cause**: No testnet tRBTC
-- **Solution**: Visit [https://faucet.rootstock.io/](https://faucet.rootstock.io/)
-
-### Debug Mode
-
-Enable detailed logging:
-
-**Merchant API**:
-```javascript
-// Add to merchant-api/index.js
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`, req.headers);
-  next();
-});
+**CLI testing:**
+```bash
+cd client-demo && npm start
 ```
 
-**Facilitator**:
-```javascript
-// Already includes detailed console logs
-// Check terminal output for verification steps
-```
+## Configuration
 
-## 🎨 Customization
+- **Payment amount**: Edit `PAYMENT_AMOUNT` in `merchant-api/.env`
+- **Confirmations**: Edit `MIN_CONFIRMATIONS` in `facilitator/.env`
+- **RPC endpoint**: Edit `ROOTSTOCK_RPC` in `facilitator/.env`
 
-### Change Payment Token
+## Troubleshooting
 
-To accept ERC-20 tokens (e.g., USDC.e) instead of native tRBTC:
+| Issue | Solution |
+|-------|----------|
+| Transaction not found | Wait 30-60 seconds |
+| Wrong network | Switch to Rootstock Testnet in MetaMask |
+| Balance is 0 | Get tRBTC from [faucet.rootstock.io](https://faucet.rootstock.io/) |
+| Facilitator unavailable | Start facilitator service first |
 
-1. **Update facilitator** to check token transfers:
-   ```javascript
-   // Use ethers.Contract to read Transfer events
-   const tokenContract = new ethers.Contract(tokenAddress, erc20ABI, provider);
-   const filter = tokenContract.filters.Transfer(from, to);
-   const events = await tokenContract.queryFilter(filter, blockNumber, blockNumber);
-   ```
-
-2. **Update frontend** to use token approval + transfer:
-   ```javascript
-   // Approve token spending
-   await tokenContract.approve(recipient, amount);
-   // Transfer tokens
-   await tokenContract.transfer(recipient, amount);
-   ```
-
-### Add Order Database
-
-Store orders in a database:
-
-```javascript
-// merchant-api/index.js
-import { MongoClient } from 'mongodb';
-
-const orders = db.collection('orders');
-await orders.insertOne({
-  orderId: `ORDER-${Date.now()}`,
-  txHash,
-  customer: req.body.customer,
-  items: ['Apples', 'Bananas'],
-  status: 'confirmed',
-  createdAt: new Date()
-});
-```
-
-### Add Authentication
-
-Require user authentication before ordering:
-
-```javascript
-// merchant-api/index.js
-app.use('/api/order-groceries', authenticateUser);
-
-function authenticateUser(req, res, next) {
-  const token = req.headers.authorization;
-  // Verify JWT token
-  next();
-}
-```
-
-## 🚀 Future Enhancements
-
-### Planned Features
-
-- [ ] **ERC-20 Support**: Accept USDC.e, USDT, DAI
-- [ ] **Transaction History**: View past orders and payments
-- [ ] **QR Code Payments**: Display QR codes for mobile wallets
-- [ ] **Webhook Notifications**: Real-time payment notifications
-- [ ] **Multi-chain Support**: Extend to Ethereum, Polygon, etc.
-- [ ] **Payment Expiry**: Time-limited payment windows
-- [ ] **Refund System**: Automated refund processing
-- [ ] **Admin Dashboard**: Monitor payments and orders
-- [ ] **Rate Limiting**: Prevent abuse with request limits
-- [ ] **Formal x402 Headers**: Implement Coinbase's x402 specification
-
-### Production Considerations
-
-Before deploying to production:
-
-1. **Security**:
-   - Use HTTPS for all services
-   - Implement rate limiting
-   - Add request validation
-   - Secure private keys with HSM/KMS
-   - Add CORS restrictions
-
-2. **Reliability**:
-   - Use redundant RPC endpoints
-   - Add database for order persistence
-   - Implement retry logic
-   - Add monitoring and alerts
-   - Use load balancers
-
-3. **Scalability**:
-   - Cache verification results
-   - Use message queues for async processing
-   - Implement horizontal scaling
-   - Optimize database queries
-
-4. **Compliance**:
-   - Add KYC/AML checks if required
-   - Implement transaction limits
-   - Add audit logging
-   - Follow local regulations
-
-## 📚 Resources
-
-### Rootstock
+## Resources
 
 - [Rootstock Docs](https://dev.rootstock.io/)
-- [Rootstock Testnet Faucet](https://faucet.rootstock.io/)
-- [Rootstock Explorer](https://explorer.testnet.rsk.co/)
-- [Rootstock GitHub](https://github.com/rsksmart)
+- [Rootstock Faucet](https://faucet.rootstock.io/)
+- [Block Explorer](https://explorer.testnet.rootstock.io/)
+- [HTTP 402 Spec](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402)
 
-### x402 Protocol
+## License
 
-- [HTTP 402 Status Code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402)
-- [Coinbase x402 Proposal](https://github.com/coinbase/x402)
-
-### Development Tools
-
-- [Ethers.js Documentation](https://docs.ethers.org/)
-- [Wagmi Documentation](https://wagmi.sh/)
-- [Viem Documentation](https://viem.sh/)
-- [Express.js Guide](https://expressjs.com/)
-
-## 📄 License
-
-MIT License - feel free to use this starter kit for your projects!
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 💬 Support
-
-- **Issues**: Open a GitHub issue
-- **Questions**: Check existing issues or start a discussion
-- **Rootstock Support**: Visit [Rootstock Discord](https://rootstock.io/discord)
+MIT License
 
 ---
 
-**Built with ❤️ for the Rootstock ecosystem**
-
-*Powered by Bitcoin security, EVM compatibility, and the x402 protocol*
+**Built for the Rootstock ecosystem** • Bitcoin security + EVM compatibility
