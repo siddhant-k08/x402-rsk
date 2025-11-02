@@ -1,21 +1,10 @@
-/**
- * x402 Client Demo - Smart Purchase CLI
- * 
- * Usage:
- *   npm start                              # Default: "I want to buy groceries"
- *   npm start "I want to buy a book"       # Custom query
- *   npm start "I want to buy a car"        # Another example
- * 
- * Supports: books, cars, phones, laptops, groceries, clothing, coffee, meals, and more!
- */
-
 import axios from 'axios';
 import dotenv from 'dotenv';
 import { ethers } from 'ethers';
 
 dotenv.config();
 
-const ROOTSTOCK_RPC = process.env.ROOTSTOCK_RPC || 'https://public-node.testnet.rsk.co';
+const ROOTSTOCK_RPC = process.env.ROOTSTOCK_RPC || 'https://rpc.testnet.rootstock.io/<YOUR_API_KEY>';
 const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY;
 const MERCHANT_API_URL = process.env.MERCHANT_API_URL || 'http://localhost:4000';
 
@@ -36,11 +25,7 @@ function log(message, color = 'reset') {
 
 async function main() {
   try {
-    // Get query from command line args or use default
-    const query = process.argv.slice(2).join(' ') || 'I want to buy groceries';
-    
-    log('\n🛍️ x402 Client Demo - Smart Purchase\n', 'bright');
-    log(`📝 Purchase Request: "${query}"\n`, 'cyan');
+    log('\n🛒 x402 Client Demo - Order Groceries\n', 'bright');
 
     // Validate configuration
     if (!WALLET_PRIVATE_KEY || WALLET_PRIVATE_KEY === '0xYourPrivateKeyForTesting') {
@@ -65,12 +50,12 @@ async function main() {
       process.exit(1);
     }
 
-    log('\n📡 Step 1: Submitting purchase request without payment...\n', 'blue');
+    log('\n📡 Step 1: Requesting order without payment...\n', 'blue');
 
     // Step 1: Call API without payment
     let response;
     try {
-      response = await axios.post(`${MERCHANT_API_URL}/api/purchase`, { query }, {
+      response = await axios.post(`${MERCHANT_API_URL}/api/order-groceries`, {}, {
         validateStatus: () => true // Accept any status code
       });
     } catch (error) {
@@ -87,8 +72,6 @@ async function main() {
 
     const paymentInfo = response.data.payment_required;
     log('✅ Received 402 Payment Required:', 'green');
-    log(`   ${paymentInfo.emoji} Item Type: ${paymentInfo.itemType}`, 'cyan');
-    log(`   Preview: ${paymentInfo.preview.join(', ')}`, 'cyan');
     log(`   Chain: ${paymentInfo.chain}`, 'cyan');
     log(`   Recipient: ${paymentInfo.recipient}`, 'cyan');
     log(`   Amount: ${paymentInfo.amount_tRBTC} tRBTC`, 'cyan');
@@ -107,21 +90,21 @@ async function main() {
     });
 
     log(`✅ Transaction sent: ${tx.hash}`, 'green');
-    log(`🔗 View on explorer: https://explorer.testnet.rsk.co/tx/${tx.hash}`, 'cyan');
+    log(`🔗 View on explorer: https://explorer.testnet.rootstock.io/tx/${tx.hash}`, 'cyan');
     log('\n⏳ Waiting for confirmation...', 'yellow');
 
     const receipt = await tx.wait(1);
     
     log(`✅ Transaction confirmed in block ${receipt.blockNumber}`, 'green');
 
-    // Step 3: Retry purchase with payment proof
-    log('\n📡 Step 3: Submitting purchase with payment proof...\n', 'blue');
+    // Step 3: Retry order with payment proof
+    log('\n📡 Step 3: Submitting order with payment proof...\n', 'blue');
 
     const paymentHeader = JSON.stringify({ txHash: tx.hash });
     
     const finalResponse = await axios.post(
-      `${MERCHANT_API_URL}/api/purchase`,
-      { query },
+      `${MERCHANT_API_URL}/api/order-groceries`,
+      {},
       {
         headers: {
           'X-PAYMENT': paymentHeader
@@ -131,21 +114,19 @@ async function main() {
     );
 
     if (finalResponse.status === 200) {
-      log('🎉 SUCCESS! Purchase confirmed!\n', 'green');
+      log('🎉 SUCCESS! Order confirmed!\n', 'green');
       log(JSON.stringify(finalResponse.data, null, 2), 'cyan');
       
       if (finalResponse.data.order) {
-        log(`\n${finalResponse.data.order.emoji} Order Details:`, 'bright');
+        log('\n📦 Order Details:', 'bright');
         log(`   Order ID: ${finalResponse.data.order.id}`, 'cyan');
-        log(`   Type: ${finalResponse.data.order.itemType}`, 'cyan');
         log(`   Items: ${finalResponse.data.order.items.join(', ')}`, 'cyan');
         log(`   Status: ${finalResponse.data.order.status}`, 'green');
-        log(`   Delivery: ${finalResponse.data.order.estimatedDelivery || 'N/A'}`, 'cyan');
         log(`   Transaction: ${finalResponse.data.order.txHash}`, 'cyan');
         log(`   Confirmations: ${finalResponse.data.order.confirmations}`, 'cyan');
       }
     } else {
-      log(`❌ Purchase failed with status ${finalResponse.status}`, 'red');
+      log(`❌ Order failed with status ${finalResponse.status}`, 'red');
       log(JSON.stringify(finalResponse.data, null, 2), 'red');
     }
 

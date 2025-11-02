@@ -14,16 +14,16 @@ export const rootstockTestnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: [import.meta.env.VITE_ROOTSTOCK_RPC || 'https://public-node.testnet.rsk.co'],
+      http: [import.meta.env.VITE_ROOTSTOCK_RPC || 'https://rpc.testnet.rootstock.io/<YOUR_API_KEY>'],
     },
     public: {
-      http: ['https://public-node.testnet.rsk.co'],
+      http: ['https://rpc.testnet.rootstock.io/<YOUR_API_KEY>'],
     },
   },
   blockExplorers: {
     default: {
-      name: 'RSK Explorer',
-      url: 'https://explorer.testnet.rsk.co',
+      name: 'Rootstock Explorer',
+      url: 'https://explorer.testnet.rootstock.io',
     },
   },
   testnet: true,

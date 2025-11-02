@@ -7,7 +7,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4001;
-const ROOTSTOCK_RPC = process.env.ROOTSTOCK_RPC || 'https://public-node.testnet.rsk.co';
+const ROOTSTOCK_RPC = process.env.ROOTSTOCK_RPC || 'https://rpc.testnet.rootstock.io/<YOUR_API_KEY>';
 const MIN_CONFIRMATIONS = parseInt(process.env.MIN_CONFIRMATIONS || '1');
 
 // Initialize Rootstock provider
