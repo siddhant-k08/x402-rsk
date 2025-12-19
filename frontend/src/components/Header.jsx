@@ -8,9 +8,9 @@ const Header = () => {
   const { disconnect } = useDisconnect();
 
   return (
-    <div className="flex h-14 px-4 lg:px-8 justify-between border-b border-gray-700">
+    <div className="flex h-14 px-4 justify-between">
       <div className="flex items-center">
-        <a href="/" className="flex items-center gap-2">
+        <a href="/" className="items-center gap-2 ml-4 mr-6 shrink-0">
           <RootstockLogo className="cursor-pointer" />
         </a>
       </div>
