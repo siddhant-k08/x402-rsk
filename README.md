@@ -1,4 +1,4 @@
-# 🚀 x402 Payment Starter Kit
+# x402 Payment Starter Kit
 
 A production-ready implementation of HTTP 402 "Payment Required" for cryptocurrency payments on Rootstock. Gate API access behind native tRBTC payments with blockchain verification.
 
